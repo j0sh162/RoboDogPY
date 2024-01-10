@@ -96,6 +96,7 @@ startPos = [0,0,0.4]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
 boxId = p.loadURDF("go1_description/urdf/go1.urdf", startPos, startOrientation)
 print_joint_info(boxId)
+p.changeVisualShape(boxId, 0, rgbaColor=[0, 0, 0, 0.5])
 
 # Changing the joint angles
 fr = [0, 0.8, -1.2]
@@ -107,6 +108,7 @@ rl = [0, 0.8, -1.2]
 for i in range (100000):
     p.stepSimulation()
     time.sleep(1./240.)
+    p.addUserDebugPoints([p.getBasePositionAndOrientation(boxId)[0]], [(255,0,0)], 10, 0.2)
     if i > 100:
         set_joint_angles(fr, fl, rr, rl)
 
