@@ -36,19 +36,15 @@ class TaskSpaceManipulator:
         self.total_mass = sum(self.mass)
 
     def calc_com_jac(self):
-        jacobians = []
-        for i in range(self.num_joints):
-            result = self.p.getLinkState(self.robot_id, i, computeLinkVelocity=1, computeForwardKinematics=1)
-            link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
+        model = kp.build_serial_chain_from_urdf(open("arm.urdf"), 'arm_link_5')
+        jacobians = model.jacobian(self.get_joint_positions(), end_only=False)
 
-            j_lin, j_ang = self.p.calculateJacobian(self.robot_id, i, com_trn, self.get_joint_positions()[1:5],
-                                                    self.get_joint_velocities()[1:5], [0, 0, 0, 0])
-            jacobians.append(np.concatenate([j_lin, j_ang]))
-
-        com_jac = np.zeros(jacobians[0].shape)
-
-        for i in range(len(jacobians)):
-            com_jac += jacobians[i] * self.mass[i] / self.total_mass
+        com_jac = np.zeros(jacobians['base_link'].shape)
+        counter = 0
+        keys = jacobians.keys()
+        for i in keys:
+            com_jac += jacobians[i] * self.mass[counter-1] / self.total_mass
+            counter += 1
 
         return com_jac
 
@@ -64,7 +60,7 @@ class TaskSpaceManipulator:
 
 
             # Update total mass and weighted positions
-            weighted_positions += self.mass[joint_index]*np.array(result[0])
+            weighted_positions += np.array(result[0])
 
         com = weighted_positions / self.total_mass
         return com
@@ -89,20 +85,20 @@ class TaskSpaceManipulator:
         print(error)
         # Compute joint velocities using PD control
 
-        joint_velocities = error * np.dot(np.linalg.pinv(Jacobian), self.desired_vel)
+        joint_velocities = 0.5 * np.dot(np.linalg.pinv(Jacobian), self.desired_vel)
         #print(self.get_joint_positions()[1:5])
 
         # Update joint positions based on joint velocities
-        joint_positions = self.get_joint_positions()[1:5] + joint_velocities * self.time_step
-        joint_positions = np.concatenate([joint_positions, [0, 0]])
+        joint_positions = self.get_joint_positions() + joint_velocities * self.time_step
+
         zero_vec = [0.1] * self.num_joints
         self.p.setJointMotorControlArray(self.robot_id,
                                          range(self.num_joints),
                                          p.POSITION_CONTROL,
                                          targetPositions=joint_positions,
                                          targetVelocities=zero_vec,
-                                         positionGains=[1.0] * self.num_joints,
-                                         velocityGains=[0.3] * self.num_joints)
+                                         positionGains=[0.5] * self.num_joints,
+                                         velocityGains=[0.5] * self.num_joints)
         self.p.stepSimulation()
 
 
@@ -134,8 +130,8 @@ if __name__ == '__main__':
 
     task_space = TaskSpaceManipulator("arm.urdf", 0.8, 1)
     print(task_space.calc_com())
-    task_space.set_target([0,0,1])
-    for i in range(100):
+    task_space.set_target([0,1,1.5])
+    for i in range(10000):
         task_space.task_space_iterate()
 
     # print(p.getLinkStates(task_space.robot_id))
