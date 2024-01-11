@@ -24,8 +24,11 @@ class TaskSpaceManipulator:
         self.p.setGravity(0.0, 0.0, self.gravity_constant)
 
         self.p.loadURDF("plane.urdf", [0, 0, -0.3])
-        self.robot_id = self.p.loadURDF(robot_file_path, useFixedBase=True)
-        self.p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
+
+        startPos = [0,0,0.4]
+        startOrientation = p.getQuaternionFromEuler([0,0,0])
+        self.robot_id = self.p.loadURDF(robot_file_path, startPos, startOrientation, useFixedBase=True)
+        # self.p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
         self.num_joints = p.getNumJoints(self.robot_id)
 
         self.mass = []
@@ -127,8 +130,7 @@ class TaskSpaceManipulator:
                   "length {}, got {}".format(num_joints, len(torque)))
 
 if __name__ == '__main__':
-
-    task_space = TaskSpaceManipulator("arm.urdf", 0.8, 1)
+    task_space = TaskSpaceManipulator("arm.urdf", robot_id, 0.8, 1)
     print(task_space.calc_com())
     task_space.set_target([0,1,1.5])
     for i in range(10000):
