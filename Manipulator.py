@@ -5,7 +5,7 @@ import kinpy as kp
 
 
 class TaskSpaceManipulator:
-    def __init__(self,robot_file_path,kp,kd):
+    def __init__(self, robot_file_path, kp, kd):
         self.desired_vel = None
         self.gravity_constant = -9.81
         self.time_step = 0.001
@@ -40,9 +40,10 @@ class TaskSpaceManipulator:
         for i in range(self.num_joints):
             result = self.p.getLinkState(self.robot_id, i, computeLinkVelocity=1, computeForwardKinematics=1)
             link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
-            j_lin,j_ang = self.p.calculateJacobian(self.robot_id, i, com_trn, self.get_joint_positions()[1:5],
-                                     self.get_joint_velocities()[1:5], [0, 0, 0, 0])
-            jacobians.append(np.concatenate([j_lin,j_ang]))
+
+            j_lin, j_ang = self.p.calculateJacobian(self.robot_id, i, com_trn, self.get_joint_positions()[1:5],
+                                                    self.get_joint_velocities()[1:5], [0, 0, 0, 0])
+            jacobians.append(np.concatenate([j_lin, j_ang]))
 
         com_jac = np.zeros(jacobians[0].shape)
 
@@ -57,14 +58,13 @@ class TaskSpaceManipulator:
         # Loop through each joint to calculate the total mass and weighted positions
         for joint_index in range(self.num_joints):
             # Get dynamics information for the joint
-            dynamics_info = self.p.getDynamicsInfo(self.robot_id, joint_index)
 
+            result = self.p.getLinkState(self.robot_id, joint_index, computeLinkVelocity=1, computeForwardKinematics=1)
             # Extract mass and position information
-            link_mass = dynamics_info[0]
-            link_position = dynamics_info[3]
+
 
             # Update total mass and weighted positions
-            weighted_positions += link_mass * np.array(link_position)
+            weighted_positions += np.array(result[0])
 
         com = weighted_positions / self.total_mass
         return com
@@ -82,47 +82,61 @@ class TaskSpaceManipulator:
         X_current = self.calc_com()
 
         # Desired task space position (replace with your desired position)
-        X_desired = np.array([0.1, 0.2, 0.3])
+
 
         # Task space error
-        error = np.linalg.norm(X_desired-X_current)
-
+        error = np.linalg.norm(self.desired_pos - X_current)
+        print(error)
         # Compute joint velocities using PD control
 
-
-
-        joint_velocities = self.kp* error * np.dot(np.linalg.pinv(Jacobian),  self.desired_vel)
-        print(self.get_joint_positions()[1:5])
-
+        joint_velocities = error * np.dot(np.linalg.pinv(Jacobian), self.desired_vel)
+        #print(self.get_joint_positions()[1:5])
 
         # Update joint positions based on joint velocities
         joint_positions = self.get_joint_positions()[1:5] + joint_velocities * self.time_step
-        joint_positions = np.concatenate([joint_positions,[0,0]])
-        zero_vec = [0.0] * self.num_joints
+        joint_positions = np.concatenate([joint_positions, [0, 0]])
+        zero_vec = [0.1] * self.num_joints
         self.p.setJointMotorControlArray(self.robot_id,
-                                    range(self.num_joints),
-                                    p.POSITION_CONTROL,
-                                    targetPositions=joint_positions,
-                                    targetVelocities=zero_vec,
-                                    positionGains=[1.0] * self.num_joints,
-                                    velocityGains=[0.3] * self.num_joints)
+                                         range(self.num_joints),
+                                         p.POSITION_CONTROL,
+                                         targetPositions=joint_positions,
+                                         targetVelocities=zero_vec,
+                                         positionGains=[1.0] * self.num_joints,
+                                         velocityGains=[0.3] * self.num_joints)
         self.p.stepSimulation()
-    def set_target(self,desired_pos):
+
+
+    def set_target(self, desired_pos):
         current = self.calc_com()
         desired_vel = desired_pos - current
+        self.desired_pos = desired_pos
+        zero_vec = [0.0] * 3
+        self.desired_vel = np.concatenate([desired_vel, zero_vec])
 
-        zero_vec = [1.0] * 3
-        self.desired_vel = np.concatenate([desired_vel,zero_vec])
-
-
+    def setJointPosition(self, position, kp=1.0, kv=0.3):
+        num_joints = p.getNumJoints(self.robot_id)
+        zero_vec = [0.0] * num_joints
+        print(num_joints)
+        if len(position) == num_joints:
+            p.setJointMotorControlArray(self.robot_id,
+                                        range(num_joints),
+                                        p.POSITION_CONTROL,
+                                        targetPositions=position,
+                                        targetVelocities=zero_vec,
+                                        positionGains=[kp] * num_joints,
+                                        velocityGains=[kv] * num_joints)
+        else:
+            print("Not setting torque. "
+                  "Expected torque vector of "
+                  "length {}, got {}".format(num_joints, len(torque)))
 
 if __name__ == '__main__':
 
-    task_space = TaskSpaceManipulator("arm.urdf",0.5,1)
+    task_space = TaskSpaceManipulator("arm.urdf", 0.8, 1)
     print(task_space.calc_com())
-
-    task_space.set_target([0.0,0.0,0.08])
+    task_space.set_target([0,0,1])
     for i in range(100):
         task_space.task_space_iterate()
-    print(task_space.calc_com())
 
+    # print(p.getLinkStates(task_space.robot_id))
+    print(task_space.calc_com())
