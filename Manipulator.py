@@ -4,82 +4,125 @@ import numpy as np
 import kinpy as kp
 
 
-def get_joint_positions(p,robot_id,num_joints):
-    return [p.getJointState(kukaId, jointIndex)[0] for jointIndex in range(numJoints)]
+class TaskSpaceManipulator:
+    def __init__(self,robot_file_path,kp,kd):
+        self.desired_vel = None
+        self.gravity_constant = -9.81
+        self.time_step = 0.001
+        self.p = p
+        self.kp = kp
+        self.kd = kd
 
-def get_joint_velocities(p,robot_id,num_joints):
-    return [p.getJointState(kukaId, jointIndex)[1] for jointIndex in range(numJoints)]
+        clid = self.p.connect(p.SHARED_MEMORY)
+        if clid < 0:
+            self.p.connect(p.DIRECT)
+
+        self.p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
+        self.p.resetSimulation()
+        self.p.setTimeStep(self.time_step)
+        self.p.setGravity(0.0, 0.0, self.gravity_constant)
+
+        self.p.loadURDF("plane.urdf", [0, 0, -0.3])
+        self.robot_id = self.p.loadURDF(robot_file_path, useFixedBase=True)
+        self.p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
+        self.num_joints = p.getNumJoints(self.robot_id)
+
+        self.mass = []
+
+        for i in range(self.num_joints):
+            self.mass.append(p.getDynamicsInfo(self.robot_id, i)[0])
+
+        self.total_mass = sum(self.mass)
+
+    def calc_com_jac(self):
+        jacobians = []
+        for i in range(self.num_joints):
+            result = self.p.getLinkState(self.robot_id, i, computeLinkVelocity=1, computeForwardKinematics=1)
+            link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
+            j_lin,j_ang = self.p.calculateJacobian(self.robot_id, i, com_trn, self.get_joint_positions()[1:5],
+                                     self.get_joint_velocities()[1:5], [0, 0, 0, 0])
+            jacobians.append(np.concatenate([j_lin,j_ang]))
+
+        com_jac = np.zeros(jacobians[0].shape)
+
+        for i in range(len(jacobians)):
+            com_jac += jacobians[i] * self.mass[i] / self.total_mass
+
+        return com_jac
+
+    def calc_com(self):
+        weighted_positions = np.zeros(3)
+
+        # Loop through each joint to calculate the total mass and weighted positions
+        for joint_index in range(self.num_joints):
+            # Get dynamics information for the joint
+            dynamics_info = self.p.getDynamicsInfo(self.robot_id, joint_index)
+
+            # Extract mass and position information
+            link_mass = dynamics_info[0]
+            link_position = dynamics_info[3]
+
+            # Update total mass and weighted positions
+            weighted_positions += link_mass * np.array(link_position)
+
+        com = weighted_positions / self.total_mass
+        return com
+
+    def get_joint_positions(self):
+        return [p.getJointState(self.robot_id, jointIndex)[0] for jointIndex in range(self.num_joints)]
+
+    def get_joint_velocities(self):
+        return [p.getJointState(self.robot_id, jointIndex)[1] for jointIndex in range(self.num_joints)]
+
+    def task_space_iterate(self):
+        Jacobian = self.calc_com_jac()
+
+        # Compute the current end-effector position (replace with actual calculation)
+        X_current = self.calc_com()
+
+        # Desired task space position (replace with your desired position)
+        X_desired = np.array([0.1, 0.2, 0.3])
+
+        # Task space error
+        error = np.linalg.norm(X_desired-X_current)
+
+        # Compute joint velocities using PD control
 
 
-def calc_com_jac(p,robot_id, end_effector_id,numJoints):
-    jacobians = []
-    for i in range(end_effector_id):
-        result = p.getLinkState(kukaId, i, computeLinkVelocity=1, computeForwardKinematics=1)
-        link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
-        jacobians.append(p.calculateJacobian(robot_id,i,com_trn,get_joint_positions(p,robot_id,numJoints)[1:5],get_joint_velocities(p,robot_id,numJoints)[1:5],[0,0,0,0]))
+
+        joint_velocities = self.kp* error * np.dot(np.linalg.pinv(Jacobian),  self.desired_vel)
+        print(self.get_joint_positions()[1:5])
 
 
-    mass = []
+        # Update joint positions based on joint velocities
+        joint_positions = self.get_joint_positions()[1:5] + joint_velocities * self.time_step
+        joint_positions = np.concatenate([joint_positions,[0,0]])
+        zero_vec = [0.0] * self.num_joints
+        self.p.setJointMotorControlArray(self.robot_id,
+                                    range(self.num_joints),
+                                    p.POSITION_CONTROL,
+                                    targetPositions=joint_positions,
+                                    targetVelocities=zero_vec,
+                                    positionGains=[1.0] * self.num_joints,
+                                    velocityGains=[0.3] * self.num_joints)
+        self.p.stepSimulation()
+    def set_target(self,desired_pos):
+        current = self.calc_com()
+        desired_vel = desired_pos - current
 
-    for i in range(numJoints):
-        mass.append(p.getDynamicsInfo(kukaId,i)[0])
-
-    total_mass = sum(mass)
-
-    com_jac = np.zeros(jacobians[0].shape)
-
-    for i in range(len(jacobians)):
-        com_jac += jacobians[i] * mass[i]/total_mass
-
-    return com_jac
-
-def calc_com(p,robot_id):
-    return None
-
+        zero_vec = [1.0] * 3
+        self.desired_vel = np.concatenate([desired_vel,zero_vec])
 
 
 
-clid = p.connect(p.SHARED_MEMORY)
-if (clid < 0):
-    p.connect(p.DIRECT)
+if __name__ == '__main__':
 
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
+    task_space = TaskSpaceManipulator("arm.urdf",0.5,1)
+    print(task_space.calc_com())
 
-time_step = 0.001
-gravity_constant = -9.81
-p.resetSimulation()
-p.setTimeStep(time_step)
-p.setGravity(0.0, 0.0, gravity_constant)
-
-p.loadURDF("plane.urdf", [0, 0, -0.3])
-
-# kukaId = p.loadURDF("TwoJointRobot_w_fixedJoints.urdf", useFixedBase=True)
-kukaId = p.loadURDF("arm.urdf", useFixedBase=True)
-p.resetBasePositionAndOrientation(kukaId, [0, 0, 0], [0, 0, 0, 1])
-numJoints = p.getNumJoints(kukaId)
-
-model = kp.build_serial_chain_from_urdf(open("arm.urdf"),'arm_link_5')
-jacobians = model.jacobian([0,0,0,0],end_only=False)
-i = 0
-mass = []
-for i in range(7):
-    mass.append( p.getDynamicsInfo(kukaId,i-1)[0])
-total_mass = sum(mass)
-keys = jacobians.keys()
-
-
-com_jac = np.zeros(jacobians['base_link'].shape)
-counter = 0
-for i in keys:
-    com_jac += jacobians[i] * mass[counter]/total_mass
-    counter += 1
-
-
-com_jac_inv = np.linalg.pinv(com_jac)
-
-
-V_task = np.array([2,1,1,0,0,0])
-
-joint_velocities = np.dot(com_jac_inv, V_task)
-print(joint_velocities)
+    task_space.set_target([0.0,0.0,0.08])
+    for i in range(100):
+        task_space.task_space_iterate()
+    print(task_space.calc_com())
 
