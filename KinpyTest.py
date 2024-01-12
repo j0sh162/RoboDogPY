@@ -1,3 +1,5 @@
+import time
+
 import pybullet as p
 import pybullet_data
 import numpy as np
@@ -15,7 +17,7 @@ class TaskSpaceManipulator:
 
         clid = self.p.connect(p.SHARED_MEMORY)
         if clid < 0:
-            self.p.connect(p.DIRECT)
+            self.p.connect(p.GUI)
 
         self.p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -24,11 +26,8 @@ class TaskSpaceManipulator:
         self.p.setGravity(0.0, 0.0, self.gravity_constant)
 
         self.p.loadURDF("plane.urdf", [0, 0, -0.3])
-
-        startPos = [0,0,0.4]
-        startOrientation = p.getQuaternionFromEuler([0,0,0])
-        self.robot_id = self.p.loadURDF(robot_file_path, startPos, startOrientation, useFixedBase=True)
-        # self.p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
+        self.robot_id = self.p.loadURDF(robot_file_path, useFixedBase=True)
+        self.p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
         self.num_joints = p.getNumJoints(self.robot_id)
 
         self.mass = []
@@ -88,7 +87,10 @@ class TaskSpaceManipulator:
         print(error)
         # Compute joint velocities using PD control
 
-        joint_velocities = 0.5 * np.dot(np.linalg.pinv(Jacobian), self.desired_vel)
+        ut =  self.kp * error
+
+        joint_velocities = ut*self.normalize(np.dot(np.linalg.pinv(Jacobian), self.desired_vel))
+
         #print(self.get_joint_positions()[1:5])
 
         # Update joint positions based on joint velocities
@@ -102,15 +104,22 @@ class TaskSpaceManipulator:
                                          targetVelocities=zero_vec,
                                          positionGains=[0.5] * self.num_joints,
                                          velocityGains=[0.5] * self.num_joints)
+        time.sleep(1./240.)
         self.p.stepSimulation()
 
 
     def set_target(self, desired_pos):
         current = self.calc_com()
-        desired_vel = desired_pos - current
+        desired_vel = self.normalize(desired_pos - current)
         self.desired_pos = desired_pos
         zero_vec = [0.0] * 3
         self.desired_vel = np.concatenate([desired_vel, zero_vec])
+
+    def normalize(self,v):
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v / norm
 
     def setJointPosition(self, position, kp=1.0, kv=0.3):
         num_joints = p.getNumJoints(self.robot_id)
@@ -130,10 +139,11 @@ class TaskSpaceManipulator:
                   "length {}, got {}".format(num_joints, len(torque)))
 
 if __name__ == '__main__':
-    task_space = TaskSpaceManipulator("arm.urdf", robot_id, 0.8, 1)
+
+    task_space = TaskSpaceManipulator("arm.urdf", 0.5, 1)
     print(task_space.calc_com())
-    task_space.set_target([0,1,1.5])
-    for i in range(10000):
+    task_space.set_target([-0.3,0.2,1.5])
+    for i in range(100000):
         task_space.task_space_iterate()
 
     # print(p.getLinkStates(task_space.robot_id))
