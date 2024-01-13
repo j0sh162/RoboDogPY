@@ -60,11 +60,12 @@ class TaskSpaceManipulator:
             result = self.p.getLinkState(self.robot_id, joint_index, computeLinkVelocity=1, computeForwardKinematics=1)
             # Extract mass and position information
 
-
             # Update total mass and weighted positions
-            weighted_positions += np.array(result[0])
+            weighted_positions += self.mass[joint_index]*np.array(result[0])
+
 
         com = weighted_positions / self.total_mass
+
         return com
 
     def get_joint_positions(self):
@@ -105,6 +106,7 @@ class TaskSpaceManipulator:
                                          positionGains=[0.5] * self.num_joints,
                                          velocityGains=[0.5] * self.num_joints)
         time.sleep(1./240.)
+        self.p.addUserDebugPoints([X_current, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
         self.p.stepSimulation()
 
 
@@ -140,9 +142,9 @@ class TaskSpaceManipulator:
 
 if __name__ == '__main__':
 
-    task_space = TaskSpaceManipulator("arm.urdf", 0.5, 1)
+    task_space = TaskSpaceManipulator("arm.urdf", 1.4, 1)
     print(task_space.calc_com())
-    task_space.set_target([-0.3,0.2,1.5])
+    task_space.set_target([0.3,0.1,0.2])
     for i in range(100000):
         task_space.task_space_iterate()
 
