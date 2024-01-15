@@ -3,7 +3,6 @@ import time
 import pybullet_data
 import numpy as np
 from spatialmath.base import angvec2r
-import kinpy as kp
 
 """
 JointType:
@@ -149,10 +148,6 @@ print("=========================================================================
 print("===============================================================================================================")
 print(get_joint_rotation_matrix(boxId, 3))
 
-num_joints = p.getNumJoints(boxId)
-# jac = p.calculateJacobian(boxId, 0, p.getBasePositionAndOrientation(boxId)[0], [0.0]*num_joints, [0.0]*num_joints, [0.0]*num_joints)
-# print(jac)
-# p.changeVisualShape(boxId, 0, rgbaColor=[0, 0, 0, 0.5])
 
 # Changing the joint angles
 fr = [0, 0.8, -1.2]
@@ -160,12 +155,7 @@ fl = [0, 0.8, -1.2]
 rr = [0, 0.8, -1.2]
 rl = [0, 0.8, -1.2]
 
-x = [p.getJointState(boxId, jointIndex)[0] for jointIndex in range(num_joints)]
-zer_vec = [0.0] * num_joints
-com = p.getLinkState(boxId, 0)[0]
-print(len(com))
-print(num_joints)
-print(len(x))
+# p.changeVisualShape(boxId, 0, rgbaColor=[0, 0, 0, 0.5])
 
 # #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 # for i in range (100000):
@@ -175,12 +165,10 @@ print(len(x))
 #     if i > 100:
 #         set_joint_angles(fr, fl, rr, rl)
 
-print(p.calculateJacobian(boxId, 0, com, x, zer_vec, zer_vec))
 # set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range(500):
     p.stepSimulation()
     set_joint_angles(fr, fl, rr, rl)
-    print(p.getBaseVelocity(boxId))
 
 print("===============================================================================================================")
 print("===============================================================================================================")
@@ -190,3 +178,5 @@ print(get_joint_rotation_matrix(boxId, 3))
 # cubePos, cubeOrn = p.getBasePositionAndOrientation(boxId)
 # print(cubePos,cubeOrn)
 # p.disconnect()
+
+print_link_info(boxId)
