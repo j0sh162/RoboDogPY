@@ -76,7 +76,7 @@ numJoints = p.getNumJoints(kukaId)
 kukaEndEffectorIndex = 0
 
 # Set a joint target for the position control and step the sim.
-setJointPosition(kukaId, [0.1] * numJoints)
+setJointPosition(kukaId, [0.0] * numJoints)
 p.stepSimulation()
 
 # Get the joint and link state directly from Bullet.
@@ -93,7 +93,9 @@ link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = r
 # The localPosition is always defined in terms of the link frame coordinates.
 
 zero_vec = [0.0] * len(mpos)
-jac_t, jac_r = p.calculateJacobian(kukaId, kukaEndEffectorIndex, com_trn, mpos, zero_vec, zero_vec)
+print(len(mpos))
+jac_t, jac_r = p.calculateJacobian(kukaId, kukaEndEffectorIndex, com_trn, mpos, mvel, zero_vec)
+
 
 
 print("Link linear velocity of CoM from getLinkState:")
@@ -106,5 +108,6 @@ print("Link angular velocity of CoM from angularJacobian * q_dot:")
 print(multiplyJacobian(kukaId, jac_r, vel))
 
 jacobian = np.concatenate([jac_t,jac_r])
-print(jacobian)
+print(np.linalg.pinv(jacobian))
+print(np.shape(np.linalg.pinv(jacobian)))
 
