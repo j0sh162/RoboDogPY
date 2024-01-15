@@ -62,7 +62,7 @@ p.resetSimulation()
 p.setTimeStep(time_step)
 p.setGravity(0.0, 0.0, gravity_constant)
 
-p.loadURDF("plane.urdf", [0, 0, -0.3])
+p.loadURDF("plane.urdf", [0, 0, 0])
 
 #kukaId = p.loadURDF("TwoJointRobot_w_fixedJoints.urdf", useFixedBase=True)
 #kukaId = p.loadURDF("TwoJointRobot_w_fixedJoints.urdf",[0,0,0])
@@ -94,7 +94,7 @@ link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = r
 
 zero_vec = [0.0] * len(mpos)
 print(len(mpos))
-jac_t, jac_r = p.calculateJacobian(kukaId, kukaEndEffectorIndex, com_trn, mpos, mvel, zero_vec)
+jac_t, jac_r = p.calculateJacobian(kukaId, kukaEndEffectorIndex, link_trn, mpos, mvel, zero_vec)
 
 
 

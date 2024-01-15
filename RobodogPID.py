@@ -181,7 +181,7 @@ class TaskSpaceManipulator:
         link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
 
         zero_vec = [0.0] * len(mpos)
-        jac_t, jac_r = p.calculateJacobian(self.robot_id, 0, link_trn, mpos, mvel, zero_vec)
+        jac_t, jac_r = p.calculateJacobian(self.robot_id, 0, com_trn, mpos, mvel, zero_vec)
 
         com_jac = np.concatenate([jac_t, jac_r])
 
