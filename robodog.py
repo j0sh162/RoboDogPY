@@ -3,6 +3,7 @@ import time
 import pybullet_data
 import numpy as np
 from spatialmath.base import angvec2r
+import kinpy as kp
 
 """
 JointType:
@@ -14,6 +15,7 @@ I suppose the following:
 4 - JOINT_FIXED
 
 """
+
 
 """
 Joint 2: b'FR_hip_joint' 0
@@ -59,7 +61,6 @@ Joint 23: b'RL_hip_joint' 0
 Joint 24: b'RL_thigh_joint' 0
 Joint 25: b'RL_calf_joint' 0
 """
-
 
 def print_joint_info(robot):
     num_joints = p.getNumJoints(robot)
@@ -117,17 +118,17 @@ def get_adjoint(X, X_d):
 # RL: 23, 24, 25
 def set_joint_angles(fr, fl, rr, rl, maxForces=[500] * 12):
     p.setJointMotorControlArray(
-        bodyUniqueId=boxId,
-        jointIndices=[2, 3, 4,  # FR
-                      9, 10, 11,  # FL
-                      16, 17, 18,  # RR
-                      23, 24, 25],  # RL
-        controlMode=p.POSITION_CONTROL,
-        targetPositions=[fr[0], fr[1], fr[2],
-                         fl[0], fl[1], fl[2],
-                         rr[0], rr[1], rr[2],
-                         rl[0], rl[1], rl[2]],
-        forces=maxForces
+        bodyUniqueId = boxId,
+        jointIndices = [2, 3, 4,        # FR
+                        9, 10, 11,      # FL
+                        16, 17, 18,     # RR
+                        23, 24, 25],    # RL
+        controlMode = p.POSITION_CONTROL,
+        targetPositions = [fr[0], fr[1], fr[2],
+                           fl[0], fl[1], fl[2],
+                           rr[0], rr[1], rr[2],
+                           rl[0], rl[1], rl[2]],
+        forces = maxForces
     )
 
     return
@@ -148,7 +149,7 @@ print("=========================================================================
 print("===============================================================================================================")
 print(get_joint_rotation_matrix(boxId, 3))
 
-# num_joints = p.getNumJoints(boxId)
+num_joints = p.getNumJoints(boxId)
 # jac = p.calculateJacobian(boxId, 0, p.getBasePositionAndOrientation(boxId)[0], [0.0]*num_joints, [0.0]*num_joints, [0.0]*num_joints)
 # print(jac)
 # p.changeVisualShape(boxId, 0, rgbaColor=[0, 0, 0, 0.5])
@@ -159,6 +160,13 @@ fl = [0, 0.8, -1.2]
 rr = [0, 0.8, -1.2]
 rl = [0, 0.8, -1.2]
 
+x = [p.getJointState(boxId, jointIndex)[0] for jointIndex in range(num_joints)]
+zer_vec = [0.0] * num_joints
+com = p.getLinkState(boxId, 0)[0]
+print(len(com))
+print(num_joints)
+print(len(x))
+
 # #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 # for i in range (100000):
 #     p.stepSimulation()
@@ -167,9 +175,12 @@ rl = [0, 0.8, -1.2]
 #     if i > 100:
 #         set_joint_angles(fr, fl, rr, rl)
 
+print(p.calculateJacobian(boxId, 0, com, x, zer_vec, zer_vec))
+# set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range(500):
     p.stepSimulation()
     set_joint_angles(fr, fl, rr, rl)
+    print(p.getBaseVelocity(boxId))
 
 print("===============================================================================================================")
 print("===============================================================================================================")
