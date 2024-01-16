@@ -149,7 +149,7 @@ class TaskSpaceManipulator:
 
         clid = self.p.connect(p.SHARED_MEMORY)
         if clid < 0:
-            self.p.connect(p.DIRECT)
+            self.p.connect(p.GUI)
 
         self.p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -157,9 +157,9 @@ class TaskSpaceManipulator:
         self.p.setTimeStep(self.time_step)
         self.p.setGravity(0.0, 0.0, self.gravity_constant)
 
-        self.p.loadURDF("plane.urdf", [0, 0, 0])
+        self.p.loadURDF("plane.urdf", [0, 0, -0.4])
         self.robot_id = self.p.loadURDF(robot_file_path)
-        self.p.resetBasePositionAndOrientation(self.robot_id, [0,0,0.4], [0, 0, 0, 1])
+        self.p.resetBasePositionAndOrientation(self.robot_id, [0,0,0], [0, 0, 0, 1])
         self.num_joints = p.getNumJoints(self.robot_id)
 
 
@@ -175,9 +175,9 @@ class TaskSpaceManipulator:
     def calc_com_jac(self):
         mpos, mvel, mtorq = self.getMotorJointStates(self.robot_id)
         print("Velocity:")
-        print(mvel)
+        print(len(mvel))
         print("Pos:")
-        print(mpos)
+        print(len(mpos))
         result = p.getLinkState(self.robot_id,
                                 0,
                                 computeLinkVelocity=1,
@@ -233,7 +233,7 @@ class TaskSpaceManipulator:
         print(u)
         print(self.desired_vel)
         print(Jacobian)
-        joint_velocities = (u*np.dot(np.linalg.pinv(Jacobian), self.desired_vel))
+        joint_velocities = (u*np.dot(np.linalg.pinv(Jacobian), self.desired_vel))[0:12]
 
 
         print(joint_velocities)
@@ -244,14 +244,14 @@ class TaskSpaceManipulator:
         # Update joint positions based on joint velocities
         joint_positions = self.getMotorJointStates(self.robot_id)[0] + joint_velocities * self.time_step
 
-        zero_vec = [0.0] * self.num_joints
+        zero_vec = [0.0] * 12
         self.p.setJointMotorControlArray(self.robot_id,
-                                         range(self.num_joints),
+                                         [2, 3, 4,9, 10, 11,16, 17, 18,23, 24, 25],
                                          p.POSITION_CONTROL,
                                          targetPositions=joint_positions,
                                          targetVelocities=zero_vec,
-                                         positionGains=[0.5] * self.num_joints,
-                                         velocityGains=[0.5] * self.num_joints)
+                                         positionGains=[0.5] * 12,
+                                         velocityGains=[0.5] * 12)
         time.sleep(1. / 240.)
         self.p.addUserDebugPoints([X_current, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
         self.p.stepSimulation()
