@@ -93,7 +93,10 @@ link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = r
 # The localPosition is always defined in terms of the link frame coordinates.
 
 zero_vec = [0.0] * len(mpos)
-print(len(mpos))
+print("Velocity:")
+print(mvel)
+print("Pos:")
+print(mpos)
 jac_t, jac_r = p.calculateJacobian(kukaId, kukaEndEffectorIndex, link_trn, mpos, mvel, zero_vec)
 
 
@@ -108,6 +111,5 @@ print("Link angular velocity of CoM from angularJacobian * q_dot:")
 print(multiplyJacobian(kukaId, jac_r, vel))
 
 jacobian = np.concatenate([jac_t,jac_r])
-print(np.linalg.pinv(jacobian))
-print(np.shape(np.linalg.pinv(jacobian)))
+print(jacobian)
 

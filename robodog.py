@@ -1,3 +1,4 @@
+import numpy as np
 import pybullet as p
 import time
 import pybullet_data
@@ -131,6 +132,136 @@ def set_joint_angles(fr, fl, rr, rl, maxForces=[500] * 12):
     )
 
     return
+
+import time
+
+import pybullet as p
+import pybullet_data
+import numpy as np
+import kinpy as kp
+
+
+class TaskSpaceManipulator:
+    def __init__(self, robot_file_path, kp, kd):
+        self.desired_vel = None
+        self.gravity_constant = -9.81
+        self.time_step = 0.001
+        self.p = p
+        self.kp = kp
+        self.kd = kd
+
+        clid = self.p.connect(p.SHARED_MEMORY)
+        if clid < 0:
+            self.p.connect(p.GUI)
+
+        self.p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
+        self.p.resetSimulation()
+        self.p.setTimeStep(self.time_step)
+        self.p.setGravity(0.0, 0.0, self.gravity_constant)
+
+        self.p.loadURDF("plane.urdf", [0, 0, -0.3])
+        self.robot_id = self.p.loadURDF(robot_file_path, useFixedBase=True)
+        self.p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
+        self.num_joints = p.getNumJoints(self.robot_id)
+
+    def getMotorJointStates(robot):
+        joint_states = p.getJointStates(robot, range(p.getNumJoints(robot)))
+        joint_infos = [p.getJointInfo(robot, i) for i in range(p.getNumJoints(robot))]
+        joint_states = [j for j, i in zip(joint_states, joint_infos) if i[3] > -1]
+        joint_positions = [state[0] for state in joint_states]
+        joint_velocities = [state[1] for state in joint_states]
+        joint_torques = [state[3] for state in joint_states]
+        return joint_positions, joint_velocities, joint_torques
+    def calc_com_jac(self):
+        mpos, mvel, mtorq = self.getMotorJointStates(self.robot_id)
+
+        result = p.getLinkState(self.robot_id,
+                                0,
+                                computeLinkVelocity=1,
+                                computeForwardKinematics=1)
+        link_trn, link_rot, com_trn, com_rot, frame_pos, frame_rot, link_vt, link_vr = result
+
+        zero_vec = [0.0] * len(mpos)
+        jac_t, jac_r = p.calculateJacobian(self.robot_id, 0, com_trn, mpos, zero_vec, zero_vec)
+
+        com_jac = np.concatenate(jac_t,jac_r)
+
+        return com_jac
+
+    def calc_com(self):
+
+
+        return com
+
+    def get_joint_positions(self):
+        return [p.getJointState(self.robot_id, jointIndex)[0] for jointIndex in range(self.num_joints)]
+
+    def get_joint_velocities(self):
+        return [p.getJointState(self.robot_id, jointIndex)[1] for jointIndex in range(self.num_joints)]
+
+    def task_space_iterate(self):
+        Jacobian = self.calc_com_jac()
+
+        # Compute the current end-effector position (replace with actual calculation)
+        X_current = self.calc_com()
+
+        # Desired task space position (replace with your desired position)
+
+
+        # Task space error
+        error = np.linalg.norm(self.desired_pos - X_current)
+        print(error)
+        # Compute joint velocities using PD control
+
+        ut =  self.kp * error
+
+        joint_velocities = ut*self.normalize(np.dot(np.linalg.pinv(Jacobian), self.desired_vel))
+
+        #print(self.get_joint_positions()[1:5])
+
+        # Update joint positions based on joint velocities
+        joint_positions = self.get_joint_positions() + joint_velocities * self.time_step
+
+        zero_vec = [0.1] * self.num_joints
+        self.p.setJointMotorControlArray(self.robot_id,
+                                         range(self.num_joints),
+                                         p.POSITION_CONTROL,
+                                         targetPositions=joint_positions,
+                                         targetVelocities=zero_vec,
+                                         positionGains=[0.5] * self.num_joints,
+                                         velocityGains=[0.5] * self.num_joints)
+        time.sleep(1./240.)
+        self.p.addUserDebugPoints([X_current, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
+        self.p.stepSimulation()
+
+
+    def set_target(self, desired_pos):
+        current = self.calc_com()
+        desired_vel = self.normalize(desired_pos - current)
+        self.desired_pos = desired_pos
+        zero_vec = [0.0] * 3
+        self.desired_vel = np.concatenate([desired_vel, zero_vec])
+
+    def normalize(self,v):
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v / norm
+
+
+
+if __name__ == '__main__':
+
+    task_space = TaskSpaceManipulator("arm.urdf", 1.4, 1)
+    print(task_space.calc_com())
+    task_space.set_target([0.3,0.1,0.2])
+    for i in range(100000):
+        task_space.task_space_iterate()
+
+    # print(p.getLinkStates(task_space.robot_id))
+    print(task_space.calc_com())
+
 
 
 # physicsClient = p.connect(p.GUI)
