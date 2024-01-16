@@ -157,9 +157,9 @@ class TaskSpaceManipulator:
         self.p.setTimeStep(self.time_step)
         self.p.setGravity(0.0, 0.0, self.gravity_constant)
 
-        self.p.loadURDF("plane.urdf", [0, 0, -0.4])
+        self.p.loadURDF("plane.urdf", [0, 0, 0])
         self.robot_id = self.p.loadURDF(robot_file_path)
-        self.p.resetBasePositionAndOrientation(self.robot_id, [0,0,0], [0, 0, 0, 1])
+        self.p.resetBasePositionAndOrientation(self.robot_id, [0,0,0.4], [0, 0, 0, 1])
         self.num_joints = p.getNumJoints(self.robot_id)
 
 
@@ -189,7 +189,7 @@ class TaskSpaceManipulator:
 
         com_jac = np.concatenate([jac_t, jac_r])
 
-        return com_jac
+        return jac_t
 
     def calc_com(self):
         result = p.getLinkState(self.robot_id,
@@ -228,12 +228,11 @@ class TaskSpaceManipulator:
         # Error 4 I might have interpreted formula wrong
         # Should also try with manipulator
 
-        error = np.linalg.norm(self.desired_pos - self.calc_com())
+        error = self.desired_pos - self.calc_com()
         u = self.kp*error
-        print(u)
-        print(self.desired_vel)
+
         print(Jacobian)
-        joint_velocities = (u*np.dot(np.linalg.pinv(Jacobian), self.desired_vel))[0:12]
+        joint_velocities = (u*np.dot(np.linalg.pinv(Jacobian), u))
 
 
         print(joint_velocities)
@@ -249,9 +248,7 @@ class TaskSpaceManipulator:
                                          [2, 3, 4,9, 10, 11,16, 17, 18,23, 24, 25],
                                          p.POSITION_CONTROL,
                                          targetPositions=joint_positions,
-                                         targetVelocities=zero_vec,
-                                         positionGains=[0.5] * 12,
-                                         velocityGains=[0.5] * 12)
+                                         targetVelocities=zero_vec,)
         time.sleep(1. / 240.)
         self.p.addUserDebugPoints([X_current, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
         self.p.stepSimulation()
@@ -263,11 +260,11 @@ class TaskSpaceManipulator:
         current = np.array(list(self.calc_com()))
         desired_pos = np.array(desired_pos)
 
-        desired_vel = desired_pos - current
-        self.desired_pos = desired_pos
-        zero_vec = [0.0] * 3
-        self.desired_vel = np.concatenate([desired_vel, zero_vec])
-        self.desired_vel_se3 = angvec2r(0, zero_vec)
+        self.desired_vel = desired_pos - current
+        # self.desired_pos = desired_pos
+        # zero_vec = [0.0] * 3
+        # self.desired_vel = np.concatenate([desired_vel, zero_vec])
+        # self.desired_vel_se3 = angvec2r(0, zero_vec)
 
     def normalize(self, v):
         norm = np.linalg.norm(v)
@@ -280,7 +277,8 @@ if __name__ == '__main__':
 
     task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 1.4, 1)
     print(task_space.calc_com())
-    task_space.set_target([0.3, 0.1, 0.2])
+    print_joint_info(task_space.robot_id)
+    task_space.set_target([0,0,0])
     for i in range(1000):
         task_space.task_space_iterate()
 

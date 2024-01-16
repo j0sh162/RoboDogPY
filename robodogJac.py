@@ -73,7 +73,7 @@ startOrientation = p.getQuaternionFromEuler([0, 0, 0])
 kukaId = p.loadURDF("go1_description/urdf/go1.urdf", startPos, startOrientation)
 p.resetBasePositionAndOrientation(kukaId, [0, 0, 0], [0, 0, 0, 1])
 numJoints = p.getNumJoints(kukaId)
-kukaEndEffectorIndex = 0
+kukaEndEffectorIndex = 2
 
 # Set a joint target for the position control and step the sim.
 setJointPosition(kukaId, [0.0] * numJoints)
@@ -110,6 +110,8 @@ print(link_vr)
 print("Link angular velocity of CoM from angularJacobian * q_dot:")
 print(multiplyJacobian(kukaId, jac_r, vel))
 
-jacobian = np.concatenate([jac_t,jac_r])
-print(jacobian)
+
+jac_t = np.array(jac_t)
+print(jac_t[:,6:])
+print(np.shape(jac_t))
 
