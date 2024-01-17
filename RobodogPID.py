@@ -4,6 +4,7 @@ import time
 import pybullet_data
 import kinpy as kp
 from spatialmath.base import angvec2r
+import pin
 
 """
 JointType:
@@ -142,7 +143,7 @@ class TaskSpaceManipulator:
     def __init__(self, robot_file_path, kp, kd):
         self.desired_vel = None
         self.gravity_constant = -9.81
-        self.time_step = 0.001
+        self.time_step = 1/240.0
         self.p = p
         self.kp = kp
         self.kd = kd
@@ -157,10 +158,13 @@ class TaskSpaceManipulator:
         self.p.setTimeStep(self.time_step)
         self.p.setGravity(0.0, 0.0, self.gravity_constant)
 
-        self.p.loadURDF("plane.urdf", [0, 0, 0])
-        self.robot_id = self.p.loadURDF(robot_file_path)
-        self.p.resetBasePositionAndOrientation(self.robot_id, [0,0,0.4], [0, 0, 0, 1])
+        plane = self.p.loadURDF("plane.urdf", [0, 0, 0])
+        self.robot_id = self.p.loadURDF(robot_file_path,[0,0,0.3955])
+        p.changeDynamics(plane, -1, lateralFriction=500)
+
         self.num_joints = p.getNumJoints(self.robot_id)
+
+
 
 
     def getMotorJointStates(self,robot):
@@ -174,10 +178,7 @@ class TaskSpaceManipulator:
 
     def calc_com_jac(self):
         mpos, mvel, mtorq = self.getMotorJointStates(self.robot_id)
-        print("Velocity:")
-        print(len(mvel))
-        print("Pos:")
-        print(len(mpos))
+
         result = p.getLinkState(self.robot_id,
                                 0,
                                 computeLinkVelocity=1,
@@ -189,7 +190,7 @@ class TaskSpaceManipulator:
 
         com_jac = np.concatenate([jac_t, jac_r])
 
-        return jac_t
+        return np.array(jac_t)[:,:12]
 
     def calc_com(self):
         result = p.getLinkState(self.robot_id,
@@ -231,25 +232,24 @@ class TaskSpaceManipulator:
         error = self.desired_pos - self.calc_com()
         u = self.kp*error
 
-        print(Jacobian)
-        joint_velocities = (u*np.dot(np.linalg.pinv(Jacobian), u))
+
+        joint_velocities = (np.dot(np.linalg.pinv(Jacobian), u))
 
 
         print(joint_velocities)
-
-        # print(self.get_joint_positions()[1:5])
-        print(len(joint_velocities))
 
         # Update joint positions based on joint velocities
         joint_positions = self.getMotorJointStates(self.robot_id)[0] + joint_velocities * self.time_step
 
         zero_vec = [0.0] * 12
+        maxForces = [500] * 12
         self.p.setJointMotorControlArray(self.robot_id,
                                          [2, 3, 4,9, 10, 11,16, 17, 18,23, 24, 25],
                                          p.POSITION_CONTROL,
                                          targetPositions=joint_positions,
-                                         targetVelocities=zero_vec,)
-        time.sleep(1. / 240.)
+                                         targetVelocities=zero_vec,
+                                         forces=maxForces)
+
         self.p.addUserDebugPoints([X_current, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
         self.p.stepSimulation()
 
@@ -258,7 +258,8 @@ class TaskSpaceManipulator:
     def set_target(self, desired_pos):
 
         current = np.array(list(self.calc_com()))
-        desired_pos = np.array(desired_pos)
+
+        self.desired_pos = np.array(desired_pos)
 
         self.desired_vel = desired_pos - current
         # self.desired_pos = desired_pos
@@ -272,15 +273,40 @@ class TaskSpaceManipulator:
             return v
         return v / norm
 
+    def set_joint_angles(self,fr, fl, rr, rl, maxForces=[500] * 12):
+        p.setJointMotorControlArray(
+            bodyUniqueId=self.robot_id,
+            jointIndices=[2, 3, 4,  # FR
+                          9, 10, 11,  # FL
+                          16, 17, 18,  # RR
+                          23, 24, 25],  # RL
+            controlMode=p.POSITION_CONTROL,
+            targetPositions=[fr[0], fr[1], fr[2],
+                             fl[0], fl[1], fl[2],
+                             rr[0], rr[1], rr[2],
+                             rl[0], rl[1], rl[2]],
+            forces=maxForces
+        )
+
 
 if __name__ == '__main__':
+    model = pin.buildModelFromUrdf("go1_description/urdf/go1.urdf", pin.JointModelFreeFlyer())
 
-    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 1.4, 1)
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 0.5, 1)
     print(task_space.calc_com())
     print_joint_info(task_space.robot_id)
-    task_space.set_target([0,0,0])
-    for i in range(1000):
-        task_space.task_space_iterate()
+    task_space.set_target([0,0,1])
+    for i in range(1000000):
+        if(i > 1000):
+            task_space.task_space_iterate()
+        else:
+            fr = [0, 0.8, -1.2]
+            fl = [0, 0.8, -1.2]
+            rr = [0, 0.8, -1.2]
+            rl = [0, 0.8, -1.2]
+
+            task_space.set_joint_angles(fr, fl, rr, rl)
+            p.stepSimulation()
+        print(task_space.calc_com())
 
     # print(p.getLinkStates(task_space.robot_id))
-    print(task_space.calc_com())
