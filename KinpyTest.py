@@ -89,6 +89,11 @@ class TaskSpaceManipulator:
         # Compute joint velocities using PD control
 
         ut = self.kp * error
+        print("------------------")
+        print(ut)
+        ut[1] = ut[1]
+        print(ut)
+        print("------------------")
         #print(error)
         joint_velocities = np.dot(np.linalg.pinv(Jacobian), ut)
 
@@ -96,7 +101,7 @@ class TaskSpaceManipulator:
 
         # Update joint positions based on joint velocities
         joint_positions = self.get_joint_positions() + joint_velocities * 0.1
-
+        print(len(joint_positions))
         zero_vec = [100.0] * self.num_joints
         self.p.setJointMotorControlArray(self.robot_id,
                                          range(self.num_joints),
@@ -105,7 +110,8 @@ class TaskSpaceManipulator:
 
                                          )
 
-        self.p.addUserDebugPoints([X_current, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
+        self.p.addUserDebugPoints([self.desired_pos, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
+
         self.p.stepSimulation()
 
 
@@ -123,11 +129,11 @@ class TaskSpaceManipulator:
 
 if __name__ == '__main__':
 
-    task_space = TaskSpaceManipulator("arm.urdf", 0.8, 1)
+    task_space = TaskSpaceManipulator("kuka_iiwa/model.urdf", 0.8, 1)
     print(task_space.calc_com())
-    task_space.set_target([0.1,0.1,0.2])
+    task_space.set_target([0.2,-0.3,0.3])
     for i in range(100000):
         task_space.task_space_iterate()
-        print(task_space.calc_com())
+        #print(task_space.calc_com())
 
     # print(p.getLinkStates(task_space.robot_id))
