@@ -97,11 +97,11 @@ class TaskSpaceManipulator:
         # Update joint positions based on joint velocities
         joint_positions = self.get_joint_positions() + joint_velocities * 0.1
 
-        zero_vec = [0.0] * self.num_joints
+        zero_vec = [100.0] * self.num_joints
         self.p.setJointMotorControlArray(self.robot_id,
                                          range(self.num_joints),
                                          p.POSITION_CONTROL,
-                                         targetPositions=joint_positions,
+                                         targetPositions=joint_positions
 
                                          )
 
@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     task_space = TaskSpaceManipulator("arm.urdf", 0.8, 1)
     print(task_space.calc_com())
-    task_space.set_target([0.1,0.1,0.3])
+    task_space.set_target([0.1,0.1,0.2])
     for i in range(100000):
         task_space.task_space_iterate()
         print(task_space.calc_com())
