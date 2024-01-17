@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     task_space = TaskSpaceManipulator("kuka_iiwa/model.urdf", 0.8, 1)
     print(task_space.calc_com())
-    task_space.set_target([0.2,-0.3,0.3])
+    task_space.set_target([0.4,0.1,0.3])
     for i in range(100000):
         task_space.task_space_iterate()
         #print(task_space.calc_com())
