@@ -230,7 +230,7 @@ class TaskSpaceManipulator:
         error = self.desired_pos - self.calc_com()
         u = self.kp*error
         
-        joint_velocities = np.linalg.pinv(Jacobian)[:,2]* u[2]
+        joint_velocities = np.dot(np.linalg.pinv(Jacobian),u)
 
 
         print(joint_velocities)
