@@ -34,6 +34,7 @@ class TaskSpaceManipulator:
         self.model = pin.buildModelFromUrdf(robot_file_path,pin.JointModelFreeFlyer())
         self.data = self.model.createData()
         self.q = pin.neutral(self.model)
+        self.qv = [0.0]*12
         pin.forwardKinematics(self.model, self.data, self.q)
 
     def calc_com_jac(self):
@@ -44,7 +45,7 @@ class TaskSpaceManipulator:
         x = pin.centerOfMass(self.model, self.data, self.q)
         return x
 
-    def task_space_iterate(self):
+    def p_control_iterate(self):
         Jacobian = self.calc_com_jac()
 
         error = self.desired_pos - self.calc_com()
@@ -59,6 +60,16 @@ class TaskSpaceManipulator:
 
         self.q = self.q + joint_velocities * 0.001
 
+    def damped_least_sqaures_iterate(self,damping_factor):
+        jac = self.calc_com_jac()
+        x_d = self.desired_pos - self.calc_com()
+        
+        tmp = (np.matmul(np.transpose(jac),jac)+(damping_factor**2)*np.identity(12))
+        self.qv = np.dot(np.matmul(np.linalg.inv(tmp),np.transpose(jac)),x_d)
+        joint_velocities = np.concatenate(
+            [[0, 0, 0, 0, 0, 0, 0], self.qv]
+        )
+        self.q = self.q +joint_velocities  * 0.001
         
 
         # Update joint positions based on joint velocities
@@ -68,7 +79,7 @@ class TaskSpaceManipulator:
         
 
     def pybullet_viz_init(self,robot_file_path):
-        self.time_step = 1/240.0
+        self.time_step = 1
         self.gravity_constant = 0
         self.p = p
         clid = self.p.connect(p.SHARED_MEMORY)
@@ -79,7 +90,7 @@ class TaskSpaceManipulator:
         self.p.setTimeStep(self.time_step)
         self.p.setGravity(0.0, 0.0, self.gravity_constant)
 
-        #plane = self.p.loadURDF("plane.urdf", [0, 0, 0])
+        plane = self.p.loadURDF("plane.urdf", [0, 0, 0])
         self.robot_id = self.p.loadURDF(robot_file_path,[0,0,0.45])
         self.num_joints = p.getNumJoints(self.robot_id)
     
@@ -89,22 +100,26 @@ class TaskSpaceManipulator:
         self.p.setJointMotorControlArray(self.robot_id,
                                          [2, 3, 4,9, 10, 11,16, 17, 18,23, 24, 25],
                                          p.POSITION_CONTROL,
-                                         targetPositions=self.q[7:],
-                                         maxForces = [10] * 12
+                                         targetPositions=[-0.1604515,   0.25034272,  0.07453935 , 0.6710855 ,  0.24160692 , 0.07255408,-0.1604515 ,  0.25034272 , 0.07453935 , 0.6710855 ,  0.24160692 , 0.07255408],
+                                         
                                          )
         self.p.addUserDebugPoints([self.desired_pos, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3)
         self.p.stepSimulation()
+    
+    
+    
 
 
 if __name__ == "__main__":
     task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 0.05, 1)
     print(task_space.calc_com())
-    task_space.set_target([0, 0.01, -0.035])
-    task_space.pybullet_viz_init("go1_description/urdf/go1.urdf")
-  
-    for i in range(1000000):
-        task_space.pybullet_viz_step  
+    task_space.set_target([0, 0.01, -0.036])
+    #task_space.pybullet_viz_init("go1_description/urdf/go1.urdf")
+
+    
+    for i in range(10000000):
+        #task_space.pybullet_viz_step()
         
-        task_space.task_space_iterate()
-        
+        #task_space.task_space_iterate()
+        task_space.damped_least_sqaures_iterate(0.1)
         print(task_space.calc_com())
