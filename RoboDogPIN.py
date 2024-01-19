@@ -79,13 +79,13 @@ class TaskSpaceManipulator:
 
     def null_space_iterate(self, alpha):
         jac = self.calc_com_jac()
-        x_d = self.kp*self.desired_pos - self.calc_com()
+        x_d = self.kp*(self.desired_pos - self.calc_com())
         jac_inv = np.linalg.pinv(jac)
         q0_d = self.get_joint_velocity_vec(alpha, jac)
         
         tmp = (np.identity(12)-np.matmul(jac_inv,jac))
         
-        self.qv = np.dot(jac_inv,x_d) + np.shape(np.dot(tmp,q0_d))
+        self.qv = np.dot(jac_inv,x_d) + np.dot(tmp,q0_d)
 
         joint_velocities = np.concatenate([[0, 0, 0, 0, 0, 0, 0], self.qv])
         self.q = self.q + joint_velocities * 0.001
@@ -146,15 +146,15 @@ class TaskSpaceManipulator:
 
 
 if __name__ == "__main__":
-    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 5, 1)
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 100, 1)
     print(task_space.calc_com())
     task_space.set_target([0, 0.01, -0.036])
-    task_space.pybullet_viz_init("go1_description/urdf/go1.urdf")
+    #task_space.pybullet_viz_init("go1_description/urdf/go1.urdf")
 
     for i in range(10000000):
-        task_space.pybullet_viz_step()
+        #task_space.pybullet_viz_step()
 
         # task_space.task_space_iterate()
         # task_space.damped_least_sqaures_iterate(0.1)
-        task_space.p_control_iterate()
-        print(task_space.calc_com())
+        task_space.null_space_iterate(0.1)
+        print(f"{i} : {task_space.calc_com()}")
