@@ -239,7 +239,7 @@ class TaskSpaceManipulator:
         joint_positions = self.getMotorJointStates(self.robot_id)[0] + joint_velocities * self.time_step
 
         zero_vec = [0.0] * 12
-        maxForces = [500] * 12
+        maxForces = [500] * 12  
         self.p.setJointMotorControlArray(self.robot_id,
                                          [2, 3, 4,9, 10, 11,16, 17, 18,23, 24, 25],
                                          p.POSITION_CONTROL,
