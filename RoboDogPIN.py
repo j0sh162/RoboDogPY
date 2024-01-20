@@ -35,6 +35,7 @@ class TaskSpaceManipulator:
         self.data = self.model.createData()
         self.q = pin.neutral(self.model)
         self.qv = [0.0] * 12
+        self.prev_error = [0.0]*3
         pin.forwardKinematics(self.model, self.data, self.q)
 
     def calc_com_jac(self):
@@ -54,7 +55,9 @@ class TaskSpaceManipulator:
         Jacobian = self.calc_com_jac()
 
         error = self.desired_pos - self.calc_com()
-        u = self.kp * error
+        kd_value = error - self.prev_error
+        self.prev_error = error
+        u = self.kp * error + self.kd*kd_value
 
         joint_velocities = np.dot(np.linalg.pinv(Jacobian), u)
         joint_velocities = np.concatenate(
@@ -66,7 +69,10 @@ class TaskSpaceManipulator:
 
     def damped_least_sqaures_iterate(self, damping_factor):
         jac = self.calc_com_jac()
-        x_d = self.kp*(self.desired_pos - self.calc_com())
+        error = self.desired_pos - self.calc_com()
+        kd_value = error - self.prev_error
+        self.prev_error = error
+        x_d = self.kp * error + self.kd*kd_value
 
         tmp = np.matmul(np.transpose(jac), jac) + (damping_factor**2) * np.identity(
             12
@@ -79,7 +85,10 @@ class TaskSpaceManipulator:
 
     def null_space_iterate(self, alpha):
         jac = self.calc_com_jac()
-        x_d = self.kp*(self.desired_pos - self.calc_com())
+        error = self.desired_pos - self.calc_com()
+        kd_value = error - self.prev_error
+        self.prev_error = error
+        x_d = self.kp * error + self.kd*kd_value
         jac_inv = np.linalg.pinv(jac)
         q0_d = self.get_joint_velocity_vec(alpha, jac)
         
@@ -143,7 +152,9 @@ class TaskSpaceManipulator:
             [self.desired_pos, self.calc_com()], [(255, 0, 0), (0, 255, 0)], 10, 0.3
         )
         self.p.stepSimulation()
-
+    
+    def error_derivative(self):
+        return None
 
 if __name__ == "__main__":
     task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 100, 1)
