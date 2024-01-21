@@ -2,7 +2,6 @@ import numpy as np
 import pybullet as p
 import time
 import pybullet_data
-import kinpy as kp
 import pinocchio as pin
 from pinocchio.visualize import MeshcatVisualizer
 
@@ -18,7 +17,6 @@ import sys
 import pybullet as p
 import pybullet_data
 import numpy as np
-import kinpy as kp
 from pinocchio.visualize import GepettoVisualizer
 import os
 from os.path import dirname, join, abspath
@@ -157,15 +155,22 @@ class TaskSpaceManipulator:
         return None
 
 if __name__ == "__main__":
-    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 100, 1)
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", 100, 5)
     print(task_space.calc_com())
-    task_space.set_target([0, 0.01, -0.036])
+    # task_space.set_target([0, 0.01, -0.036])
+    task_space.set_target([0.05, 0.01, -0.036])
     #task_space.pybullet_viz_init("go1_description/urdf/go1.urdf")
 
     for i in range(10000000):
         #task_space.pybullet_viz_step()
-
-        # task_space.task_space_iterate()
-        # task_space.damped_least_sqaures_iterate(0.1)
-        task_space.null_space_iterate(0.1)
+      
+        task_space.p_control_iterate()
+        # task_space.damped_least_sqaures_iterate(damping_factor=0.1)
+        # task_space.null_space_iterate(alpha = 0.1) # alpha - null space velocity/secondary objective velocity
         print(f"{i} : {task_space.calc_com()}")
+
+        # do target coms: 1 good, 1 singularity
+        
+        # singularity - PD controls fails, Damped/Null space - dont
+        # only PD fails - singularity (target com not reached) (crazy values)
+        # all 3 fails -- target com is completely unreachable (stucky wucky)
