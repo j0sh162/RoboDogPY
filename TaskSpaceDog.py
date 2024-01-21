@@ -15,7 +15,7 @@ class TaskSpaceDog:
         self.timestep = 0.001
         self.physicsClient = p.connect(p.GUI)
         self.p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        self.p.setGravity(0,0,-9.81)
+        self.p.setGravity(0,0,0)
         self.planeId = p.loadURDF("plane.urdf", [0, 0, 0])       
         self.boxId = p.loadURDF(filePath, [0,0,0.4], self.p.getQuaternionFromEuler([0, 0, 0]))
         self.p.changeVisualShape(self.boxId, 0, rgbaColor=[0, 0, 0, 0.5])
