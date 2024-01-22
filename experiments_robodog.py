@@ -11,6 +11,34 @@ if __name__ == "__main__":
     print("=================Start main loop=================")
 
     # kP values: 5, 10, 15, 50, 100, 150
+    kp = 1
+    kd = 0
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
+    start_com = task_space.calc_com()
+    target_com = [0, 0.01, -0.036]
+    task_space.set_target(target_com)
+    print("Start loop kp = ", kp)
+    for i in range(200000):
+        task_space.p_control_iterate()
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
+        if i % 10000 == 0:
+            print("Progress i = ", i)
+    print("End loop kp = ", kp)
+    
+    kp = 3
+    kd = 0
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
+    start_com = task_space.calc_com()
+    target_com = [0, 0.01, -0.036]
+    task_space.set_target(target_com)
+    print("Start loop kp = ", kp)
+    for i in range(200000):
+        task_space.p_control_iterate()
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
+        if i % 10000 == 0:
+            print("Progress i = ", i)
+    print("End loop kp = ", kp)
+
     kp = 5
     kd = 0
     task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
@@ -20,7 +48,7 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
@@ -34,7 +62,7 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
@@ -48,7 +76,35 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
+        if i % 10000 == 0:
+            print("Progress i = ", i)
+    print("End loop kp = ", kp)
+
+    kp = 15
+    kd = 0
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
+    start_com = task_space.calc_com()
+    target_com = [0, 0.01, -0.036]
+    task_space.set_target(target_com)
+    print("Start loop kp = ", kp)
+    for i in range(200000):
+        task_space.p_control_iterate()
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
+        if i % 10000 == 0:
+            print("Progress i = ", i)
+    print("End loop kp = ", kp)
+
+    kp = 35
+    kd = 0
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
+    start_com = task_space.calc_com()
+    target_com = [0, 0.01, -0.036]
+    task_space.set_target(target_com)
+    print("Start loop kp = ", kp)
+    for i in range(200000):
+        task_space.p_control_iterate()
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
@@ -62,7 +118,21 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
+        if i % 10000 == 0:
+            print("Progress i = ", i)
+    print("End loop kp = ", kp)
+
+    kp = 75
+    kd = 0
+    task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
+    start_com = task_space.calc_com()
+    target_com = [0, 0.01, -0.036]
+    task_space.set_target(target_com)
+    print("Start loop kp = ", kp)
+    for i in range(200000):
+        task_space.p_control_iterate()
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
@@ -76,7 +146,7 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
@@ -90,7 +160,7 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
@@ -104,7 +174,7 @@ if __name__ == "__main__":
     print("Start loop kp = ", kp)
     for i in range(200000):
         task_space.p_control_iterate()
-        save_parameters(i, kp, kd, start_com, target_com, get_error(target_com, task_space.calc_com()), "no_resolve")
+        save_parameters(i, kp, kd, start_com, target_com, task_space.calc_com(), "no_resolve")
         if i % 10000 == 0:
             print("Progress i = ", i)
     print("End loop kp = ", kp)
