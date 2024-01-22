@@ -46,7 +46,7 @@ def multiplot_show(kp, data, target_com, cutoff=200000):
 
 def multiplot_save(kp, data, target_com, filename, cutoff=200000):
     plot_data(kp, data, target_com, cutoff)
-    filename = "./experiments with coordinates/images/" + filename + str(cutoff) + ".png"
+    filename = "./experiments with coordinates/images/cut_" + str(cutoff) + "_" + filename + ".png"
     plt.savefig(filename, dpi=600)
 
 
@@ -60,12 +60,16 @@ if __name__ == "__main__":
     # # multiplot_show(kp, data, target_com, cutoff_iterations)
     # multiplot_save(kp, data, target_com, filename, cutoff_iterations)
 
-    kp_list = [1, 3, 5, 10, 15, 35, 50, 75, 100, 150, 200]
-    cutoff_list = [1000, 2500, 10000, 20000]
+    # kp_list = [1, 3, 5, 10, 15, 35, 50, 75, 100, 150, 200]
+    kp_list = [150, 200]
+    cutoff_list = [200, 500, 1000, 2500, 10000, 20000]
     target_com = [0, 0.01, -0.036]
-    for kp_elem in kp_list:
-        filename = str(kp_elem) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
+    for i in range(len(kp_list)):
+        kp = kp_list[i]
+        filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
         data = load_csv_data(filename)
-        for cutoff_elem in cutoff_list:
-            multiplot_save(kp_elem, data, target_com, filename, cutoff_elem)
+        for j in range(len(cutoff_list)):
+            cutoff = cutoff_list[j]
+            multiplot_save(kp, data, target_com, filename, cutoff)
+            # print(str(kp), "__", str(cutoff))
 
