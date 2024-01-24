@@ -16,9 +16,8 @@ class TaskSpaceManipulator:
         self.kd = kd
         self.prev_error = [0.0]*3
 
-        clid = self.p.connect(p.SHARED_MEMORY)
-        if clid < 0:
-            self.p.connect(p.GUI)
+      
+        self.p.connect(p.DIRECT)
 
         self.p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -98,7 +97,7 @@ class TaskSpaceManipulator:
             for jointIndex in range(self.num_joints)
         ]
 
-    def task_space_iterate(self):
+    def p_control_iterate(self):
         Jacobian = self.calc_com_jac()
         # Compute the current end-effector position (replace with actual calculation)
         X_current = self.calc_com()
@@ -113,7 +112,7 @@ class TaskSpaceManipulator:
 
         # Update joint positions based on joint velocities
         joint_positions = self.get_joint_positions() + joint_velocities * 0.1
-        print(len(joint_positions))
+        
         
         self.p.setJointMotorControlArray(
             self.robot_id,
@@ -134,7 +133,7 @@ class TaskSpaceManipulator:
         self.prev_error = error
         x_d = self.kp * error + self.kd*kd_value
         jac_inv = np.linalg.pinv(jac)
-        print(jac_inv)
+      
         q0_d = self.get_joint_velocity_vec(alpha, jac)
         
         tmp = (np.identity(7)-np.matmul(jac_inv,jac))
@@ -163,8 +162,7 @@ class TaskSpaceManipulator:
             current_q = self.get_joint_positions()
             current_q[i] = current_q[i] + 0.001
             jac_step = self.calc_com_jac_q(current_q)
-            print(i)
-            print(self.manipubilty_measure(jac_step))
+       
             q0_d[i] = (
                 self.manipubilty_measure(jac_step) - self.manipubilty_measure(jac)
             ) / 0.001
