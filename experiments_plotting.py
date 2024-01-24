@@ -106,6 +106,11 @@ def multiplot_show_no_cutoff(kp, data, target_com):
     plot_data_no_cutoff(kp, data, target_com)
     plt.show() 
 
+def show_experiment_local_no_cutoff(kp, target_com=[0, 0.01, -0.036]):
+    filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
+    data = load_csv_data_local(filename)
+    multiplot_show_no_cutoff(kp, data, target_com)
+
 
 if __name__ == "__main__":
     # kp = 3
@@ -127,16 +132,9 @@ if __name__ == "__main__":
     # data = load_csv_data(filename)
     # multiplot_show(kp, data, target_com, cutoff)
 
-    kp = 5
-    filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
-    data = load_csv_data_local(filename)
-    multiplot_show_no_cutoff(kp, data, target_com)
-
-    kp = 10
-    filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
-    data = load_csv_data_local(filename)
-    multiplot_show_no_cutoff(kp, data, target_com)
-
+    show_experiment_local_no_cutoff(5)
+    show_experiment_local_no_cutoff(10)
+    show_experiment_local_no_cutoff(15)
     # for i in range(len(kp_list)):
     #     kp = kp_list[i]
     #     filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
