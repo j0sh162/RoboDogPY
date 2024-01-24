@@ -14,7 +14,7 @@ YAY 10 _ 460
 def run_experiment_p_control(kp, eps, target_com=[0, 0.01, -0.036]):
     kd = 0
     task_space = TaskSpaceManipulator("go1_description/urdf/go1.urdf", kp, kd)
-    start_com = task_space.calc_com()
+    start_com = task_space.calc_com().tolist()
     task_space.set_target(target_com)
     print("Start loop kp = ", kp)
     diff_x = 100
