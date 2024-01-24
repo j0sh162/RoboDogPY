@@ -1,6 +1,38 @@
 import csv
 import matplotlib.pyplot as plt
 import pandas as pd
+from read_write_csv import get_filename
+
+def experiment_plot_show(kp, start_com, target_com, method_type, method_parameter, local, cutoff = None):
+    filename = get_filename(kp, 0, start_com, target_com, method_type, method_parameter)
+    if local:
+        data = load_csv_data_local(filename)
+    else:
+        data = load_csv_data_source(filename)
+    if cutoff is None:
+        multiplot_show_no_cutoff(kp, data, target_com)
+    else:
+        multiplot_show(kp, data, target_com, cutoff)
+
+def experiment_plot_save(kp, start_com, target_com, method_type, method_parameter, local, cutoff = None):
+    filename = get_filename(kp, 0, start_com, target_com, method_type, method_parameter)
+    if local:
+        data = load_csv_data_local(filename)
+    else:
+        data = load_csv_data_source(filename)
+    
+    if cutoff is None:
+        plot_data_no_cutoff(kp, data, target_com)
+    else:
+        plot_data(kp, data, target_com, cutoff)
+    
+    filename = "cut_"+str(cutoff)+"_"+filename+".png"
+    if local:
+        plt.savefig(filename, dpi=600)
+    else:
+        plt.savefig("./experiments with coordinates/images/" + filename, dpi = 600)
+
+
 
 
 def load_csv_data_source(filename):
@@ -14,7 +46,6 @@ def load_csv_data_source(filename):
             data['err_y'].append(float(row['err_y']))
             data['err_z'].append(float(row['err_z']))
     return data
-
 
 def plot_data(kp, data, target_com, cutoff=200000):
 
@@ -48,16 +79,10 @@ def plot_data(kp, data, target_com, cutoff=200000):
     # plt.xlabel('iter')
     plt.ylabel('com_z')
 
-
 def multiplot_show(kp, data, target_com, cutoff=200000):
     plot_data(kp, data, target_com, cutoff)
     plt.show() 
 
-
-def multiplot_save(kp, data, target_com, filename, cutoff=200000):
-    plot_data(kp, data, target_com, cutoff)
-    filename = "./experiments with coordinates/images/cut_" + str(cutoff) + "_" + filename + ".png"
-    plt.savefig(filename, dpi=600)
 
 def load_csv_data_local(filename):
     data = {'iter': [], 'err_x': [], 'err_y': [], 'err_z': []}
@@ -70,7 +95,6 @@ def load_csv_data_local(filename):
             data['err_y'].append(float(row['err_y']))
             data['err_z'].append(float(row['err_z']))
     return data
-
 
 def plot_data_no_cutoff(kp, data, target_com):
     min_iter = min(data['iter'])
@@ -106,41 +130,9 @@ def multiplot_show_no_cutoff(kp, data, target_com):
     plot_data_no_cutoff(kp, data, target_com)
     plt.show() 
 
-def show_experiment_local_no_cutoff(kp, target_com=[0, 0.01, -0.036]):
-    filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
-    data = load_csv_data_local(filename)
-    multiplot_show_no_cutoff(kp, data, target_com)
-
-
 if __name__ == "__main__":
-    # kp = 3
-    # cutoff_iterations = 5000
-    # target_com = [0, 0.01, -0.036]
-    # filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
-    # data = load_csv_data(filename)
-    # # multiplot_show(kp, data, target_com, cutoff_iterations)
-    # multiplot_save(kp, data, target_com, filename, cutoff_iterations)
-
-    kp_list = [1, 3, 5, 10, 15, 35, 50, 75, 100, 150, 200]
-    # kp_list = [150, 200]
-    cutoff_list = [200, 500, 850, 900, 1000, 2500, 10000, 20000]
     target_com = [0, 0.01, -0.036]
+    start_com = [0.008175819803293415, 0.0008478253536040646, -0.031095085500370673]
+    experiment_plot_show(10, start_com, target_com, "no_resolve", None, True, None)
 
-    # kp = kp_list[2]
-    # cutoff = cutoff_list[5]
-    # filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
-    # data = load_csv_data(filename)
-    # multiplot_show(kp, data, target_com, cutoff)
-
-    show_experiment_local_no_cutoff(5)
-    show_experiment_local_no_cutoff(10)
-    show_experiment_local_no_cutoff(15)
-    # for i in range(len(kp_list)):
-    #     kp = kp_list[i]
-    #     filename = str(kp) + "_0_[ 0.00817582  0.00084783 -0.03109509]_[0, 0.01, -0.036]_no_resolve_no_param.csv"
-    #     data = load_csv_data(filename)
-    #     for j in range(len(cutoff_list)):
-    #         cutoff = cutoff_list[j]
-    #         multiplot_save(kp, data, target_com, filename, cutoff)
-    #         # print(str(kp), "__", str(cutoff))
-
+    experiment_plot_save(10, start_com, target_com, "no_resolve", None, True, None)
